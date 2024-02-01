@@ -2,11 +2,27 @@ import pygame
 import os
 import sys
 import random
+from pygame import mixer
+
 
 pygame.init()
-size = width, height = 750, 300
+size = width, height = 1536, 800
 score = 0
-miss = 0
+start_time = pygame.time.get_ticks()
+time_hms = 0, 0, 0
+mixer.init()
+fullname1 = os.path.join('data', 'fon_music.wav')
+fullname2 = os.path.join('data', 'pop_sound.wav')
+fullname3 = os.path.join('data', 'ydar_sound.wav')
+fullname4 = os.path.join('data', 'end_sound.wav')
+fon_sound = mixer.Sound(fullname1)
+pop_sound = mixer.Sound(fullname2)
+ydar_sound = mixer.Sound(fullname3)
+end_sound = mixer.Sound(fullname4)
+fon_sound.set_volume(0.8)
+pop_sound.set_volume(0.2)
+ydar_sound.set_volume(0.7)
+end_sound.set_volume(0.5)
 screen = pygame.display.set_mode(size)
 alphabet = ["a.png", "b.png", "c.png", "d.png", "e.png", "f.png", "g.png", "h.png", "i.png", "j.png",
             "k.png", "l.png", "m.png", "n.png", "o.png", "p.png", "q.png", "r.png", "s.png", "t.png",
@@ -26,18 +42,18 @@ check = {"a.png": 97,
          "l.png": 108,
          "m.png": 109,
          "n.png": 110,
-         "o.png": 112,
-         "p.png": 113,
-         "q.png": 114,
-         "r.png": 115,
-         "s.png": 116,
-         "t.png": 117,
-         "u.png": 118,
-         "v.png": 119,
-         "w.png": 120,
-         "x.png": 121,
-         "y.png": 122,
-         "z.png": 123,
+         "o.png": 111,
+         "p.png": 112,
+         "q.png": 113,
+         "r.png": 114,
+         "s.png": 115,
+         "t.png": 116,
+         "u.png": 117,
+         "v.png": 118,
+         "w.png": 119,
+         "x.png": 120,
+         "y.png": 121,
+         "z.png": 122,
          "mountain.png": ''}
 
 
@@ -60,6 +76,7 @@ def load_image(name, colorkey=None):
 
 class Mountain(pygame.sprite.Sprite):
     image = load_image("mountains.png")
+    image = pygame.transform.scale(image, (1536, 800))
 
     def __init__(self):
         super().__init__(all_sprites)
@@ -70,10 +87,8 @@ class Mountain(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.image)
         self.rect.bottom = height
 
-
     def rscore(self):
         return self.score
-
 
     def new_sc(self):
         self.score = 0
@@ -95,18 +110,16 @@ class Landing(pygame.sprite.Sprite):
         self.rect.x = pos[0]
         self.rect.y = pos[1]
 
-
     def update(self):
-        if self.rect.y < 300:
+        if self.rect.y < 800:
             self.rect = self.rect.move(0, 1)
         else:
             self.score -= 1
+            ydar_sound.play()
             self.kill()
-
 
     def rscore(self):
         return self.score
-
 
     def new_sc(self):
         self.score = 0
@@ -118,14 +131,17 @@ def terminate():
 
 
 def draw(screen):
+    global start_time
+
     screen.fill((0, 0, 0))
-    font = pygame.font.Font(None, 30)
+    font = pygame.font.Font(None, 40)
     text = font.render("Привет!", True, (100, 255, 100))
     text1 = font.render("Эта игра поможет тебе запомнить местонахождение букв на клавиатуре", True, (100, 255, 100))
     text_x = width // 2 - text.get_width() // 2
     text_y = height // 2 - text.get_height() // 2
+    text_xx = width // 2 - text1.get_width() // 2
     screen.blit(text, (text_x, text_y))
-    screen.blit(text1, (20, 180))
+    screen.blit(text1, (text_xx, 450))
 
     while True:
         for e in pygame.event.get():
@@ -133,6 +149,8 @@ def draw(screen):
                 terminate()
             keys = pygame.key.get_pressed()
             if keys[pygame.K_SPACE]:
+                fon_sound.play(-1)
+                start_time = pygame.time.get_ticks()
                 return True
         pygame.display.flip()
         clock.tick(100)
@@ -140,11 +158,15 @@ def draw(screen):
 
 def print_score():
     global score
+    global time_hms
     global letters
     global i
     global t
     if score == -1:
+        end_sound.play()
+        fon_sound.stop()
         score = 0
+        time_hms = 0, 0, 0
         i = 0
         t = 0
         letters = ["a.png", "b.png", "c.png", "d.png"]
@@ -153,20 +175,27 @@ def print_score():
                 pt.kill()
         end()
     else:
-        font = pygame.font.Font(None, 30)
-        text = font.render(f'счет: {score}', True, (0, 0, 0))
-        screen.blit(text, (10, 10))
+        font = pygame.font.Font(None, 50)
+        text_sc = font.render(f'счет: {score}', True, (0, 0, 0))
+        screen.blit(text_sc, (10, 10))
+
+        time_ms = pygame.time.get_ticks() - start_time
+        new_hms = (time_ms // (1000 * 60 * 60)) % 24, (time_ms // (1000 * 60)) % 60, (time_ms // 1000) % 60
+        time_hms = new_hms
+        text_tic = font.render(f'время: {time_hms[1]:02d}:{time_hms[2]:02d}', True, (0, 0, 0))
+        screen.blit(text_tic, (200, 10))
 
 
 def end():
     screen.fill((0, 0, 0))
-    font = pygame.font.Font(None, 30)
+    font = pygame.font.Font(None, 40)
     text = font.render("К сожалению, ты проиграл", True, (100, 255, 100))
     text1 = font.render("Нажми пробел что бы попробовать снова", True, (100, 255, 100))
     text_x = width // 2 - text.get_width() // 2
     text_y = height // 2 - text.get_height() // 2
+    text_xx = width // 2 - text1.get_width() // 2
     screen.blit(text, (text_x, text_y))
-    screen.blit(text1, (20, 180))
+    screen.blit(text1, (text_xx, 450))
     while True:
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
@@ -180,10 +209,7 @@ def end():
         pygame.display.flip()
         clock.tick(100)
 
-if miss == 10:
-    end(screen)
-
-pygame.display.set_caption('Высадка десанта')
+pygame.display.set_caption('Игра')
 clock = pygame.time.Clock()
 screen.fill((0, 0, 0))
 
@@ -193,6 +219,7 @@ vertical_borders = pygame.sprite.Group()
 mountain = Mountain()
 i = 0
 t = 0
+right_pressed = False
 falling = True
 draw(screen)
 
@@ -206,11 +233,16 @@ while running:
             #print(event.key)
             for pt in all_sprites:
                 if event.key == check[pt.name]:
+                    pop_sound.play()
                     pt.kill()
                     score += 1
+                    right_pressed = True
+            if not right_pressed:
+                score -= 1
+            right_pressed = False
 
     if falling:
-        pos = (random.randint(30, 700), 0)
+        pos = (random.randint(30, 1450), 0)
         pt = Landing(pos)
         all_sprites.add(pt)
         falling = False
@@ -227,7 +259,6 @@ while running:
         falling = True
     if t % 240 == 0 and len(letters) != len(alphabet):
         letters.append(alphabet[len(letters)])
-        #print(letters)
     clock.tick(50 - i)
     pygame.display.flip()
 pygame.quit()
